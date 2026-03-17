@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Human-AI Interaction Research Study</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 100%; margin: 0 auto; background: white; min-height: 100vh; }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 20px; text-align: center;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .header p { font-size: 0.9rem; opacity: 0.9; }
+
+        .recording-status {
+            background: #fff3cd; color: #856404; padding: 12px;
+            text-align: center; display: none;
+            align-items: center; justify-content: center; gap: 10px; font-size: 0.9rem;
+        }
+        .recording-status.active { display: flex; }
+        .pulse {
+            width: 10px; height: 10px; background: #dc3545;
+            border-radius: 50%; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; padding: 15px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0;
+        }
+        .stat-item { text-align: center; }
+        .stat-label { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+        .stat-value { font-size: 1.2rem; font-weight: bold; color: #667eea; }
+
+        .progress-container { padding: 0 15px 15px 15px; background: #f8f9fa; }
+        .progress-bar { width: 100%; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s; width: 0%;
+        }
+
+        .content { padding: 20px; padding-bottom: 100px; }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 1.3rem; color: #333; margin-bottom: 15px;
+            padding-bottom: 10px; border-bottom: 3px solid #667eea;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block; margin-bottom: 8px; color: #333;
+            font-weight: 600; font-size: 0.95rem; line-height: 1.4;
+        }
+
+        input[type="text"], input[type="email"], input[type="number"], textarea, select {
+            width: 100%; padding: 14px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; font-family: inherit;
+            transition: all 0.3s; background: white;
+            -webkit-appearance: none; appearance: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea { min-height: 120px; resize: vertical; }
+
+        .question {
+            margin-bottom: 25px; padding: 15px; background: #f8f9fa;
+            border-radius: 10px; border-left: 4px solid #667eea;
+        }
+        .question-text { font-size: 0.95rem; color: #333; margin-bottom: 15px; line-height: 1.6; }
+
+        .checkbox-group, .radio-group { display: flex; flex-direction: column; gap: 10px; }
+        .checkbox-item, .radio-item {
+            display: flex; align-items: flex-start; gap: 12px; padding: 12px;
+            background: white; border-radius: 8px; cursor: pointer;
+            transition: background 0.2s; border: 2px solid transparent; min-height: 48px;
+        }
+        .checkbox-item input, .radio-item input {
+            width: 24px; height: 24px; cursor: pointer; margin-top: 2px; flex-shrink: 0;
+        }
+        .checkbox-item span, .radio-item span { flex: 1; line-height: 1.5; }
+
+        .likert-scale { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .likert-option {
+            display: flex; align-items: center; background: white;
+            padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0;
+            cursor: pointer; transition: all 0.2s; min-height: 48px;
+        }
+        .likert-option input[type="radio"] {
+            width: 24px; height: 24px; margin-right: 12px; cursor: pointer; flex-shrink: 0;
+        }
+        .likert-option label {
+            flex: 1; cursor: pointer; margin: 0; font-weight: normal; font-size: 0.95rem;
+        }
+
+        .consent-box {
+            background: #fff9e6; border: 2px solid #ffc107;
+            padding: 15px; border-radius: 10px; margin: 20px 0;
+        }
+
+        .button-container {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex; gap: 10px; z-index: 90;
+        }
+        button {
+            flex: 1; padding: 16px; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; text-transform: uppercase;
+            letter-spacing: 0.5px; min-height: 48px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+
+        .toast {
+            position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+            background: #333; color: white; padding: 15px 20px;
+            border-radius: 8px; z-index: 1000; display: none;
+            min-width: 200px; text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast.show { display: block; animation: slideDown 0.3s; }
+        @keyframes slideDown {
+            from { transform: translate(-50%, -20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .saving-indicator {
+            position: fixed; bottom: 80px; right: 20px;
+            background: #28a745; color: white; padding: 10px 15px;
+            border-radius: 20px; font-size: 0.85rem; display: none;
+            align-items: center; gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 95;
+        }
+        .saving-indicator.show { display: flex; }
+        .spinner {
+            width: 12px; height: 12px; border: 2px solid white;
+            border-top-color: transparent; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Export button */
+        .export-area {
+            padding: 30px 20px; text-align: center;
+        }
+        .export-btn {
+            display: inline-block; padding: 18px 30px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white; border: none; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 700; cursor: pointer;
+            margin: 10px; box-shadow: 0 4px 15px rgba(40,167,69,0.4);
+            width: 100%; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .export-btn:active { transform: scale(0.98); }
+        .export-btn.typing-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+        }
+        .success-box {
+            background: #d4edda; border: 2px solid #28a745;
+            border-radius: 12px; padding: 20px; margin: 20px 0;
+        }
+        .success-box h3 { color: #155724; margin-bottom: 10px; font-size: 1.2rem; }
+        .success-box p { color: #155724; font-size: 0.9rem; line-height: 1.6; }
+        .participant-id-display {
+            background: #667eea; color: white; border-radius: 8px;
+            padding: 10px 15px; font-size: 1.1rem; font-weight: bold;
+            display: inline-block; margin: 10px 0; letter-spacing: 2px;
+        }
+
+        @media (min-width: 768px) {
+            .container { max-width: 768px; margin: 20px auto; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+            .button-container { position: relative; box-shadow: none; border-top: 2px solid #e0e0e0; }
+            .content { padding-bottom: 20px; }
+        }
+        @media screen and (max-width: 767px) {
+            select, textarea, input[type="text"], input[type="email"], input[type="number"] { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <p>Psychology Research Survey</p>
+    </div>
+
+    <div class="recording-status" id="recordingStatus">
+        <div class="pulse"></div>
+        <span>Recording your patterns...</span>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-label">Session</div>
+            <div class="stat-value" id="sessionId">-</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Inputs</div>
+            <div class="stat-value" id="keystrokeCount">0</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Progress</div>
+            <div class="stat-value" id="progressPercent">0%</div>
+        </div>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="content" id="mainContent">
+
+        <!-- Section 1: Informed Consent -->
+        <div class="section active" data-section="1">
+            <h2 class="section-title">Participation Information Sheet and Informed Consent Form</h2>
+            <p style="margin-bottom: 15px; line-height: 1.7;">
+                Hello, I am <strong>Tanira Shaikh</strong>, pursuing my doctor of philosophy (Ph. D.) in Psychology from Amity Institute of Psychology and Allied Sciences at Amity University Kolkata.<br><br>
+                This informed consent form is for general population between the age group of 21-35 years, who use generative artificial intelligence (Gen-AI) in their daily lives. You are invited to participate in this research exploring human-AI interaction and conversation satisfaction.<br><br>
+                The purpose of this research is to discover people's inclination towards using artificial intelligence tools for conversation satisfaction, especially those who feel rejected in social circumstances and understand conversation satisfaction from their point of view. It is also to collect and analyse typing and touch interaction patterns to predict association between individual's interaction patterns, perceived feelings of rejection, and personality traits.<br><br>
+                In this research, you will interact with a touch-screen interface by filling a standardized survey questionnaire. The total duration will be 35 to 40 minutes. <strong>No direct identifiers</strong> such as name, phone number, email address, or precise location will be collected or used in any manner.<br><br>
+                All your personal data will be kept confidential and you will remain completely anonymous. Your participation is completely voluntary and you may withdraw at any time.<br><br>
+                <strong>Email:</strong> tanira.shaikh@s.amity.edu &nbsp;&nbsp; <strong>Contact:</strong> 877756901
+            </p>
+            <div class="consent-box">
+                <p style="font-weight: 600; margin-bottom: 15px;">Consent Statement:</p>
+                <p style="margin-bottom: 20px; line-height: 1.6; font-size: 0.9rem;">
+                    "I confirm that I have read and understood the information provided above. I understand that my participation is voluntary and that I may withdraw at any time. I confirm that I do not have any diagnosed psychological or physical ailments that would affect my participation. I give my voluntary consent to participate in this study."
+                </p>
+                <div class="radio-group">
+                    <label class="radio-item" onclick="selectRadio('consent','yes')">
+                        <input type="radio" name="consent" value="yes" id="consent_yes">
+                        <span><strong>YES</strong> - I consent to participate</span>
+                    </label>
+                    <label class="radio-item" onclick="selectRadio('consent','no')">
+                        <input type="radio" name="consent" value="no" id="consent_no">
+                        <span><strong>NO</strong> - I do not consent</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Demographics -->
+        <div class="section" data-section="2">
+            <h2 class="section-title">👤 Demographics</h2>
+            <div class="form-group">
+                <label>Participant ID (auto-generated):</label>
+                <input type="text" id="participant_id" readonly>
+            </div>
+            <div class="form-group">
+                <label>Age (in years) *</label>
+                <input type="number" id="age" min="21" max="35" placeholder="21-35 years" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Gender *</label>
+                <select id="gender" required>
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="non-binary">Non-binary</option>
+                    <option value="other">Other</option>
+                    <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>History of any diagnosed psychological or neurological ailments? (If yes, mention the diagnosis) *</label>
+                <textarea id="psych_history" placeholder="Please specify or write 'None'" required autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+            </div>
+            <div class="form-group">
+                <label>History of any diagnosed physical ailments? (If yes, mention the diagnosis) *</label>
+                <textarea id="physical_history" placeholder="Please specify or write 'None'" required autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Email (optional):</label>
+                <input type="email" id="email" placeholder="your.email@example.com" autocomplete="off">
+            </div>
+        </div>
+
+        <!-- Section 3: AI Usage -->
+        <div class="section" data-section="3">
+            <h2 class="section-title">🤖 AI Use Information</h2>
+            <div class="form-group">
+                <label>Purpose of using AI-based applications? (select all that apply) *</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" name="ai_purpose" value="academic" id="ai_academic"><span>Academic or professional work</span></label>
+                    <label class="checkbox-item"><input type="checkbox" name="ai_purpose" value="decision" id="ai_decision"><span>Decision-making</span></label>
+                    <label class="checkbox-item"><input type="checkbox" name="ai_purpose" value="social" id="ai_social"><span>Everyday social conversations</span></label>
+                    <label class="checkbox-item"><input type="checkbox" name="ai_purpose" value="therapeutic" id="ai_therapeutic"><span>Seeking therapeutic help</span></label>
+                    <label class="checkbox-item"><input type="checkbox" name="ai_purpose" value="other" id="ai_other"><span>Other</span></label>
+                </div>
+            </div>
+            <div class="form-group" id="ai_other_text_group" style="display:none;">
+                <label>Please specify other purpose:</label>
+                <input type="text" id="ai_purpose_other_text" placeholder="Specify other purpose" autocorrect="off" spellcheck="false">
+            </div>
+            <div class="form-group">
+                <label>What AI tools do you usually use? *</label>
+                <textarea id="ai_tools" placeholder="E.g., ChatGPT for writing, Gemini for research..." required autocorrect="off" spellcheck="false"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Hours per day on AI apps? *</label>
+                <input type="text" id="ai_hours_day" placeholder="E.g., 2-3 hours" required autocorrect="off">
+            </div>
+            <div class="form-group">
+                <label>Hours per week on AI apps? *</label>
+                <input type="text" id="ai_hours_week" placeholder="E.g., 10-15 hours" required autocorrect="off">
+            </div>
+            <div class="form-group">
+                <label>How many years have you been using AI apps? *</label>
+                <input type="text" id="ai_years" placeholder="E.g., 2 years, 6 months" required autocorrect="off">
+            </div>
+        </div>
+
+        <!-- Section 4: ARSQ -->
+        <div class="section" data-section="4">
+            <h2 class="section-title">💭 Adult Rejection Sensitivity Questionnaire (ARSQ)</h2>
+            <p style="margin-bottom: 20px; line-height: 1.6;">The items below describe situations in which people sometimes ask things of others. For each item, imagine that you are in the situation, and then answer the questions that follow it.</p>
+            <div id="arsqContainer"></div>
+        </div>
+
+        <!-- Section 5: COMPIN-10 -->
+        <div class="section" data-section="5">
+            <h2 class="section-title">🧠 COMPIN-10 Scale</h2>
+            <p style="margin-bottom: 20px;">Please read each statement carefully and indicate how correctly or incorrectly each of the following statements describes you.</p>
+            <div id="compinContainer"></div>
+        </div>
+
+        <!-- Section 6: NEO-FFI -->
+        <div class="section" data-section="6">
+            <h2 class="section-title">🔍 NEO-FFI Questionnaire</h2>
+            <p style="margin-bottom: 20px;">Please read each statement carefully and indicate how much you agree or disagree with each statement.</p>
+            <div id="neoContainer"></div>
+        </div>
+
+        <!-- Section 7: Social Scenarios -->
+        <div class="section" data-section="7">
+            <h2 class="section-title">👥 Social Scenarios</h2>
+            <p style="margin-bottom: 20px;">Read the hypothetical scenarios below carefully. Imagine yourself experiencing the situations and choose the options accordingly. You can choose more than one option.</p>
+            <div id="socialContainer"></div>
+        </div>
+
+        <!-- Section 8: Pragmatics -->
+        <div class="section" data-section="8">
+            <h2 class="section-title">💬 Social Pragmatics</h2>
+            <p style="margin-bottom: 20px;">Given below are some hypothetical situations of social interactions. Read them carefully and imagining yourself in each situation, choose "YES" or "NO" according to the question that follows. Give reasoning behind your choice for each scenario.</p>
+            <div id="pragmaticsContainer"></div>
+        </div>
+
+        <!-- Section 9: Complete + Export -->
+        <div class="section" data-section="9">
+            <div class="export-area">
+                <div class="success-box">
+                    <h3>✅ Survey Complete!</h3>
+                    <p>Thank you for participating in this research study. Your data has been recorded on this device.</p>
+                    <br>
+                    <p><strong>Your Participant ID:</strong></p>
+                    <div class="participant-id-display" id="completionParticipantId">-</div>
+                    <br>
+                    <p>Please download both CSV files below and hand the device back to the researcher.</p>
+                </div>
+
+                <p style="margin-bottom: 15px; font-weight: 600; color: #333;">📥 Download Your Data:</p>
+
+                <button class="export-btn" onclick="downloadSurveyCSV()">
+                    📋 Download Survey Responses CSV
+                </button>
+                <button class="export-btn typing-btn" onclick="downloadTypingCSV()">
+                    ⌨️ Download Typing Features CSV
+                </button>
+
+                <p style="margin-top: 20px; font-size: 0.85rem; color: #666; line-height: 1.6;">
+                    Both files will be saved to your device's Downloads folder. The researcher will collect these files from you.
+                </p>
+            </div>
+        </div>
+
+    </div><!-- end content -->
+
+    <div class="button-container">
+        <button class="btn-secondary" id="backBtn" style="display:none;" onclick="previousSection()">← Back</button>
+        <button class="btn-primary" id="nextBtn" onclick="nextSection()">Continue →</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="saving-indicator" id="savingIndicator">
+        <div class="spinner"></div><span>Saving...</span>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// COMPLETELY STANDALONE - NO BACKEND NEEDED
+// All feature calculation + CSV export happens in the browser
+// Data stored in memory, downloaded as CSV at the end
+// ============================================================
+
+const TOTAL_SECTIONS = 9;
+
+// ============================================================
+// STATE
+// ============================================================
+let sessionId    = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+let participantId = 'P' + Date.now().toString().substr(-8);
+let currentSection = 1;
+let keystrokeCount = 0;
+let isRecording  = false;
+let updateInterval = null;
+let lastTouchStart = null;
+
+// Raw data collected in memory
+let keystrokes    = [];   // all keystroke events
+let touchEvents   = [];   // all touch events
+let textInputs    = {};   // field_id → current text
+let backspaceCount = 0;
+let deleteCount    = 0;
+let textBuffer     = '';
+
+// Feature rows saved every second
+let typingFeatureRows = [];
+
+// Survey responses (filled at submit)
+let surveyResponse = {};
+
+// Track session start
+let sessionStart = Date.now();
+
+// ============================================================
+// EMOTION LEXICONS (JS versions)
+// ============================================================
+const POSITIVE_WORDS  = new Set(['happy','joy','love','good','great','excellent','wonderful','amazing','fantastic','awesome','beautiful','pleased','delighted','cheerful','glad','satisfied','content','blessed','thrilled','excited','optimistic','hopeful','grateful']);
+const NEGATIVE_WORDS  = new Set(['sad','angry','hate','bad','terrible','awful','horrible','frustrated','annoyed','upset','miserable','depressed','disappointed','unhappy','disgusted','ashamed','guilty','regret','hurt','pain','suffering','distressed','troubled']);
+const ANXIETY_WORDS   = new Set(['worry','anxious','nervous','scared','fear','afraid','stressed','tense','uncertain','worried','uneasy','apprehensive','dread','panic','overwhelmed','restless','jittery','troubled']);
+const CERTAINTY_WORDS = new Set(['always','never','definitely','certainly','absolutely','surely','completely','totally','entirely','undoubtedly','clearly','obviously','must','will','cannot']);
+const TENTATIVE_WORDS = new Set(['maybe','perhaps','possibly','might','could','probably','seems','appears','somewhat','guess','suppose']);
+const APOLOGY_WORDS   = new Set(['sorry','apologize','apologies','excuse','forgive','pardon','regret','fault','mistake']);
+const HEDGING_PHRASES = ['kind of','sort of','i think','i guess','i suppose','i believe','i feel like','somewhat','rather','fairly','quite','maybe'];
+const POLITENESS_WORDS= new Set(['please','thank','thanks','appreciate','grateful','kindly']);
+const FIRST_PERSON    = new Set(['i','me','my','mine','myself']);
+const SECOND_PERSON   = new Set(['you','your','yours','yourself','yourselves']);
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    initializeInterface();
+    generateARSQQuestions();
+    generateCOMPINQuestions();
+    generateNEOQuestions();
+    generateSocialScenarios();
+    generatePragmaticsQuestions();
+    setupEventListeners();
+    disableAutocorrectOnAll();
+    setupTextTracking();
+});
+
+function initializeInterface() {
+    document.getElementById('sessionId').textContent = participantId;
+    document.getElementById('participant_id').value  = participantId;
+    updateProgress();
+    updateNavigationButtons();
+}
+
+// ============================================================
+// DISABLE AUTOCORRECT
+// ============================================================
+function disableAutocorrectOnAll() {
+    document.querySelectorAll('input[type="text"], input[type="email"], textarea').forEach(el => {
+        el.setAttribute('autocorrect','off');
+        el.setAttribute('autocapitalize','off');
+        el.setAttribute('autocomplete','off');
+        el.setAttribute('spellcheck','false');
+    });
+}
+
+// ============================================================
+// TEXT TRACKING - stored in memory only
+// ============================================================
+function setupTextTracking() {
+    document.addEventListener('input', function(e) {
+        const el = e.target;
+        if ((el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') && el.id) {
+            textInputs[el.id] = el.value;
+        }
+    });
+}
+
+// ============================================================
+// QUESTION GENERATORS
+// ============================================================
+function generateARSQQuestions() {
+    const container = document.getElementById('arsqContainer');
+    const scenarios = [
+        { text: "You ask your parents or another family member for a loan to help you through a difficult financial time.", concern: "How concerned or anxious would you be over whether or not your family would want to help you?", expect: "I would expect that they would agree to help as much as they can." },
+        { text: "You approach a close friend to talk after doing or saying something that seriously upset him/her.", concern: "How concerned or anxious would you be over whether or not your friend would want to talk with you?", expect: "I would expect that he/she would want to talk with me to try to work things out." },
+        { text: "You bring up the issue of sexual protection with your significant other and tell him/her how important you think it is.", concern: "How concerned or anxious would you be over his/her reaction?", expect: "I would expect that he/she would be willing to discuss our possible options without getting defensive." },
+        { text: "You ask your supervisor for help with a problem you have been having at work.", concern: "How concerned or anxious would you be over whether or not the person would want to help you?", expect: "I would expect that he/she would want to try to help me out." },
+        { text: "After a bitter argument, you call or approach your significant other because you want to make up.", concern: "How concerned or anxious would you be over whether or not your significant other would want to make up with you?", expect: "I would expect that he/she would be at least as eager to make up as I would be." },
+        { text: "You ask your parents or other family members to come to an occasion important to you.", concern: "How concerned or anxious would you be over whether or not they would want to come?", expect: "I would expect that they would want to come." },
+        { text: "At a party, you notice someone on the other side of the room that you'd like to get to know, and you approach him or her to try to start a conversation.", concern: "How concerned or anxious would you be over whether or not the person would want to talk with you?", expect: "I would expect that he/she would want to talk with me." },
+        { text: "Lately you've been noticing some distance between yourself and your significant other, and you ask him/her if there is something wrong.", concern: "How concerned or anxious would you be over whether or not he/she still loves you and wants to be with you?", expect: "I would expect that he/she will show sincere love and commitment to our relationship no matter what else may be going on." },
+        { text: "You call a friend when there is something on your mind that you feel you really need to talk about.", concern: "How concerned or anxious would you be over whether or not your friend would want to listen?", expect: "I would expect that he/she would listen and support me." }
+    ];
+    scenarios.forEach((s, idx) => {
+        const n = idx + 1;
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `
+            <div class="question-text"><strong>Scenario ${n}:</strong> ${s.text}</div>
+            <div class="form-group">
+                <label>a. ${s.concern}</label>
+                <div class="likert-scale">${createLikertOptions('s'+n+'_concern',['Very unconcerned','Unconcerned','Somewhat concerned','Concerned','Very concerned'])}</div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label style="font-size:0.85rem;color:#666;">Please explain your choice:</label>
+                    <textarea id="s${n}_explanation" rows="2" placeholder="Explain why you chose this option..." autocorrect="off" spellcheck="false" style="font-size:14px;min-height:70px;"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>b. ${s.expect}</label>
+                <div class="likert-scale">${createLikertOptions('s'+n+'_expect',['Very unlikely','Unlikely','Somewhat likely','Likely','Very likely'])}</div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label style="font-size:0.85rem;color:#666;">Please explain your choice:</label>
+                    <textarea id="s${n}_expect_explanation" rows="2" placeholder="Explain why you chose this option..." autocorrect="off" spellcheck="false" style="font-size:14px;min-height:70px;"></textarea>
+                </div>
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+function generateCOMPINQuestions() {
+    const container = document.getElementById('compinContainer');
+    const questions = [
+        "I do not know how to use my competences at the right moment",
+        "I know that I underestimate myself, but I cannot deal with it.",
+        "Usually, my performance is under average because I do not like to be intrusive",
+        "I cannot express myself and keep the people I love by my side.",
+        "During work I keep telling myself, I won't make it, so it would be better if I didn't start at all.",
+        "I often feel that I will not be able to do what is expected.",
+        "I am easily inhibited by failure, and I find it difficult to go on.",
+        "I often feel that I am not ready for things that I must do.",
+        "I do not respect myself enough.",
+        "I am not self-confident."
+    ];
+    questions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `<div class="question-text">${i+1}. ${q}</div>
+            <div class="likert-scale">${createLikertOptions('compin_'+(i+1),['Strongly Disagree','Disagree','Neutral','Agree','Strongly Agree'])}</div>`;
+        container.appendChild(div);
+    });
+}
+
+function generateNEOQuestions() {
+    const container = document.getElementById('neoContainer');
+    const questions = [
+        "I am not a worrier","I like to have a lot of people around me.","I don't like to waste my time daydreaming.","I try to be courteous to everyone I meet.","I keep my belongings clean and neat.",
+        "I often feel inferior to others.","I laugh easily.","Once I find the right way to do something, I stick to it.","I often get into arguments with my family and co-workers.","I'm pretty good about pacing myself so as to get things done on time.",
+        "When I'm under a great deal of stress, sometimes I feel like I'm going to pieces.","I don't consider myself especially \"light-hearted.\"","I am intrigued by the patterns I find in art and nature.","Some people think I'm selfish and egotistical.","I am not a very methodical person.",
+        "I rarely feel alone or blue.","I really enjoy talking to people.","I believe letting students hear controversial speakers can only confuse and mislead them.","I would rather cooperate with others than compete with them.","I try to perform all the tasks assigned to me conscientiously.",
+        "Often feel tense and jittery.","I like to be where the action is.","Poetry has little or no effect on me.","I tend to be cynical and skeptical of other's intentions.","I have a clear set of goals and work toward them in an orderly fashion.",
+        "Sometimes I feel completely worthless.","I usually prefer to do things alone.","I often try new and foreign foods.","I believe that most people will take advantage of you if you let them.","I waste a lot of time before settling down to work.",
+        "I rarely feel fearful or anxious.","I often feel as if I am bursting with energy.","I seldom notice the moods or feelings that different environments produce.","Most people I know like me.","I work hard to accomplish my goals.",
+        "I often get angry at the way people treat me.","I am a cheerful, high-spirited person.","I believe we should look to our religious authorities for decisions on moral issues.","Some people think of me as cold and calculating.","When I make a commitment, I can always be counted on to follow through.",
+        "Too often, when things go wrong, I get discouraged and feel like giving up.","I am not a cheerful optimist.","Sometimes when I am reading poetry or looking at a work of art, I feel a chill or wave of excitement.","I'm hard-headed and tough-minded in my attitudes.","Sometimes I'm not as dependable or reliable as I should be.",
+        "I am seldom sad or depressed.","My life is fast-paced.","I have little interest in speculating on the nature of the universe or the human condition.","I generally try to be thoughtful and considerate.","I am a productive person who always gets the job done.",
+        "I often feel helpless and want someone else to solve my problems.","I am a very active person.","I have a lot of intellectual curiosity.","If I don't like people, I let them know it.","I never seem to be able to get organized.",
+        "At times I have been so ashamed I just wanted to hide.","I would rather go my own way than be a leader of others.","I often enjoy playing with theories or abstract ideas.","I am willing to manipulate people if it serves my purposes.","I strive for excellence in everything I do."
+    ];
+    questions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `<div class="question-text">${i+1}. ${q}</div>
+            <div class="likert-scale">${createLikertOptions('neo_'+(i+1),['Strongly Disagree','Disagree','Neutral','Agree','Strongly Agree'])}</div>`;
+        container.appendChild(div);
+    });
+}
+
+function generateSocialScenarios() {
+    const container = document.getElementById('socialContainer');
+    const scenarios = [
+        "After an eventful day at your place of education or workplace, when you feel you are not getting the priority that you deserve to get in a group, whom would you seek for comfort or help out of the given options?",
+        "In a group of colleagues/peers/friends, while engaging in a conversation, you felt that you are being ignored or not noticed. Whom would you seek for comfort or help out of the given options after this experience?",
+        "When you feel that a person who you like interacting with is not prioritizing you the way you deserve, whom would you seek for comfort or help out of the given options?",
+        "You are assigned to a group to complete a task but during discussions you feel that your opinions and ideas are being overlooked or you are being ignored. After such experience, whom would you seek for comfort or help out of the given options?",
+        "You feel that, in a family gathering, you are less visible to others or not being prioritized as you would like to be. After such experience, whom would you seek for comfort or help out of the given options?",
+        "Overall, if there is any recent situation where you felt rejected, whom would you like to seek for comfort and social support?"
+    ];
+    const options = ["Parents","Siblings","Relatives","AI system","Spouse/Partner","Friend(s)","Teachers","Mental Health Professionals","Stranger"];
+    scenarios.forEach((scenario, idx) => {
+        const n = idx + 1;
+        const div = document.createElement('div');
+        div.className = 'question';
+        const checkboxHTML = options.map(opt => `
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:white;border-radius:8px;margin-bottom:6px;cursor:pointer;">
+                <input type="checkbox" name="support_${n}" value="${opt}" style="width:20px;height:20px;flex-shrink:0;">
+                <span>${opt}</span>
+            </label>`).join('');
+        // NOTE: ID is social_${n}_explanation - unique, does NOT conflict with ARSQ
+        div.innerHTML = `
+            <div class="question-text"><strong>${n}.</strong> ${scenario}</div>
+            <div class="checkbox-group" style="margin-bottom:12px;">
+                <p style="font-weight:600;margin-bottom:8px;">Who would you reach out to?</p>
+                ${checkboxHTML}
+            </div>
+            <div class="form-group">
+                <label style="font-size:0.85rem;color:#666;">Please explain your choice:</label>
+                <textarea id="social_${n}_explanation" rows="2" placeholder="Explain why you chose this option..." autocorrect="off" spellcheck="false" style="font-size:14px;min-height:70px;"></textarea>
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+function generatePragmaticsQuestions() {
+    const container = document.getElementById('pragmaticsContainer');
+    const questions = [
+        "While you were having conversations with a group of friends, someone makes a joke where they use certain terms as a figure of speech or a pun, and not literally. Do you feel confused and unable to understand what they mean to say, and interpret their words literally?",
+        "In a group, people were talking about their weekend plans and while one of them was sharing about theirs, someone else begins to share about their own weekend plans before the person finished about theirs. Do you feel you also have done so before because you found following a conversation or taking turn in conversation difficult?",
+        "When you were talking to a friend and acquaintance, after a while they give you subtle hints that they need to end the conversation instead of directly saying that they need to leave. Do you find it difficult to understand such subtle, non-verbal, and indirect cues in conversations?",
+        "Someone offered or gifted you something that you might dislike. In such a case, do you directly tell the person that you dislike it and find it is difficult for you to respond using terms less direct, like appreciating their effort in giving you the gift? Do you also find it difficult to understand the other person's negative reaction to your response?"
+    ];
+    questions.forEach((q, idx) => {
+        const n = idx + 1;
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `
+            <div class="question-text"><strong>${n}.</strong> ${q}</div>
+            <div class="radio-group">
+                <label class="radio-item" onclick="selectRadio('pragmatics_${n}_response','yes')">
+                    <input type="radio" name="pragmatics_${n}_response" value="yes" id="pragmatics_${n}_yes"><span>YES</span>
+                </label>
+                <label class="radio-item" onclick="selectRadio('pragmatics_${n}_response','no')">
+                    <input type="radio" name="pragmatics_${n}_response" value="no" id="pragmatics_${n}_no"><span>NO</span>
+                </label>
+            </div>
+            <textarea id="pragmatics_${n}_explanation" rows="3" placeholder="Please explain..." autocorrect="off" spellcheck="false" style="margin-top:10px;"></textarea>`;
+        container.appendChild(div);
+    });
+}
+
+function createLikertOptions(name, labels) {
+    return labels.map((label, idx) => `
+        <label class="likert-option" onclick="selectRadio('${name}','${idx+1}')">
+            <input type="radio" name="${name}" value="${idx+1}" id="${name}_${idx+1}">
+            <label for="${name}_${idx+1}">${label}</label>
+        </label>`).join('');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function nextSection() {
+    if (currentSection === 1) {
+        const consent = document.querySelector('input[name="consent"]:checked');
+        if (!consent) { showToast('Please indicate your consent'); return; }
+        if (consent.value === 'no') { showToast('Thank you. You cannot proceed without consent.'); return; }
+        startRecording();
+    } else if (currentSection === 2) {
+        const age = document.getElementById('age').value;
+        const gender = document.getElementById('gender').value;
+        const psych = document.getElementById('psych_history').value;
+        const physical = document.getElementById('physical_history').value;
+        if (!age || !gender || !psych || !physical) { showToast('Please fill all required fields'); return; }
+    } else if (currentSection === TOTAL_SECTIONS - 1) {
+        // About to go to the export/complete section
+        buildAndSaveAllData();
+    }
+
+    document.querySelector(`.section[data-section="${currentSection}"]`).classList.remove('active');
+    currentSection++;
+
+    if (currentSection <= TOTAL_SECTIONS) {
+        document.querySelector(`.section[data-section="${currentSection}"]`).classList.add('active');
+        updateProgress();
+        updateNavigationButtons();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (currentSection === TOTAL_SECTIONS) {
+        stopRecording();
+        document.getElementById('completionParticipantId').textContent = participantId;
+    }
+}
+
+function previousSection() {
+    if (currentSection > 1) {
+        document.querySelector(`.section[data-section="${currentSection}"]`).classList.remove('active');
+        currentSection--;
+        document.querySelector(`.section[data-section="${currentSection}"]`).classList.add('active');
+        updateProgress();
+        updateNavigationButtons();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function updateNavigationButtons() {
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    backBtn.style.display = currentSection === 1 ? 'none' : 'block';
+    if (currentSection === TOTAL_SECTIONS) {
+        // On the export page - hide buttons
+        document.querySelector('.button-container').style.display = 'none';
+    } else if (currentSection === TOTAL_SECTIONS - 1) {
+        nextBtn.textContent = 'Submit ✓';
+    } else {
+        nextBtn.textContent = 'Continue →';
+    }
+}
+
+function updateProgress() {
+    const pct = Math.round((currentSection / TOTAL_SECTIONS) * 100);
+    document.getElementById('progressPercent').textContent = pct + '%';
+    document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function selectRadio(name, value) {
+    const el = document.getElementById(name + '_' + value);
+    if (el) el.checked = true;
+}
+
+// ============================================================
+// RECORDING
+// ============================================================
+function startRecording() {
+    if (isRecording) return;
+    isRecording = true;
+    sessionStart = Date.now();
+    document.getElementById('recordingStatus').classList.add('active');
+    updateInterval = setInterval(captureTypingSnapshot, 1000);
+    showToast('Recording started!');
+}
+
+function stopRecording() {
+    if (updateInterval) clearInterval(updateInterval);
+    isRecording = false;
+    document.getElementById('recordingStatus').classList.remove('active');
+}
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+function setupEventListeners() {
+    document.addEventListener('keydown', handleKeystroke);
+    document.addEventListener('keyup', handleKeystroke);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.getElementById('ai_other').addEventListener('change', function() {
+        document.getElementById('ai_other_text_group').style.display = this.checked ? 'block' : 'none';
+    });
+}
+
+function handleKeystroke(event) {
+    if (!isRecording) return;
+    const t = event.target;
+    if (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA') return;
+
+    keystrokeCount++;
+    document.getElementById('keystrokeCount').textContent = keystrokeCount;
+
+    const now = Date.now() / 1000;
+    keystrokes.push({
+        key: event.key,
+        type: event.type,
+        timestamp: now,
+        keyDownTime: event.timeStamp / 1000
+    });
+
+    if (event.type === 'keydown') {
+        if (event.key === 'Backspace') { backspaceCount++; if (textBuffer) textBuffer = textBuffer.slice(0,-1); }
+        else if (event.key === 'Delete') { deleteCount++; }
+        else if (event.key.length === 1) { textBuffer += event.key; }
+    }
+}
+
+function handleTouchStart(e) {
+    if (!isRecording) return;
+    lastTouchStart = Date.now();
+    Array.from(e.touches).forEach(touch => touchEvents.push({
+        type: 'touchstart', pressure: touch.force || 0.5,
+        area: (touch.radiusX || 10) * (touch.radiusY || 10),
+        x: touch.clientX, y: touch.clientY,
+        timestamp: Date.now() / 1000, duration: 0
+    }));
+}
+
+function handleTouchMove(e) {
+    if (!isRecording) return;
+    Array.from(e.touches).forEach(touch => touchEvents.push({
+        type: 'touchmove', pressure: touch.force || 0.5,
+        area: (touch.radiusX || 10) * (touch.radiusY || 10),
+        x: touch.clientX, y: touch.clientY,
+        timestamp: Date.now() / 1000, duration: 0
+    }));
+}
+
+function handleTouchEnd(e) {
+    if (!isRecording || !lastTouchStart) return;
+    const duration = (Date.now() - lastTouchStart) / 1000;
+    Array.from(e.changedTouches).forEach(touch => touchEvents.push({
+        type: 'touchend', pressure: touch.force || 0.5,
+        area: (touch.radiusX || 10) * (touch.radiusY || 10),
+        x: touch.clientX, y: touch.clientY,
+        timestamp: Date.now() / 1000, duration
+    }));
+}
+
+// ============================================================
+// FEATURE CALCULATION (Pure JS - no backend)
+// ============================================================
+function mean(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function std(arr)  {
+    if (arr.length < 2) return 0;
+    const m = mean(arr);
+    return Math.sqrt(arr.reduce((a,b)=>a+(b-m)**2,0)/arr.length);
+}
+function median(arr) {
+    if (!arr.length) return 0;
+    const s = [...arr].sort((a,b)=>a-b);
+    const mid = Math.floor(s.length/2);
+    return s.length%2 ? s[mid] : (s[mid-1]+s[mid])/2;
+}
+function skewness(arr) {
+    if (arr.length < 3) return 0;
+    const m = mean(arr), s = std(arr);
+    if (s === 0) return 0;
+    return mean(arr.map(x => ((x-m)/s)**3));
+}
+function kurtosis(arr) {
+    if (arr.length < 4) return 0;
+    const m = mean(arr), s = std(arr);
+    if (s === 0) return 0;
+    return mean(arr.map(x => ((x-m)/s)**4)) - 3;
+}
+
+function captureTypingSnapshot() {
+    const now = Date.now() / 1000;
+    const timings = keystrokes.filter(k=>k.type==='keydown').map(k=>k.timestamp);
+
+    let features = {
+        timestamp:          new Date().toISOString(),
+        session_id:         sessionId,
+        user_id:            participantId,
+        section_number:     currentSection,
+        // defaults
+        mean_inter_key_latency: 0, median_inter_key_latency: 0, std_inter_key_latency: 0,
+        min_inter_key_latency: 0, max_inter_key_latency: 0,
+        mean_key_hold_duration: 0, median_key_hold_duration: 0, std_key_hold_duration: 0,
+        dwell_time_mean: 0, dwell_time_std: 0, flight_time_mean: 0, flight_time_std: 0,
+        typing_speed_wpm: 0, typing_burst_count: 0, typing_burstiness: 0,
+        pause_count: 0, mean_pause_duration: 0, std_pause_duration: 0,
+        typing_entropy: 0, typing_rhythm_variance: 0,
+        backspace_count: backspaceCount, backspace_ratio: 0, correction_ratio: 0,
+        delete_count: deleteCount, total_corrections: backspaceCount + deleteCount,
+        total_keystrokes: keystrokes.length, unique_keys_count: 0, key_diversity: 0,
+        punctuation_count: 0, punctuation_ratio: 0, capitalization_count: 0, capitalization_ratio: 0,
+        exclamation_count: 0, question_mark_count: 0, ellipsis_count: 0,
+        skewness_inter_key: 0, kurtosis_inter_key: 0, cv_inter_key_latency: 0,
+        mean_touch_pressure: 0, std_touch_pressure: 0, mean_touch_duration: 0, std_touch_duration: 0,
+        mean_touch_area: 0, std_touch_area: 0, mean_touch_velocity: 0, std_touch_velocity: 0,
+        swipe_count: 0, tap_count: 0, total_touch_events: touchEvents.length,
+        word_count: 0, char_count: 0, sentence_count: 0, avg_word_length: 0, avg_sentence_length: 0,
+        positive_emotion_words: 0, negative_emotion_words: 0, first_person_pronouns: 0,
+        second_person_pronouns: 0, anxiety_words: 0, certainty_words: 0, tentative_words: 0,
+        apology_count: 0, hedging_count: 0, politeness_markers: 0,
+        self_focus_ratio: 0, sentiment_volatility: 0, message_length_trend: textBuffer.length,
+        hesitation_score: 0
+    };
+
+    // Temporal
+    if (timings.length >= 2) {
+        const ikl = timings.slice(1).map((t,i) => t - timings[i]);
+        features.mean_inter_key_latency   = mean(ikl);
+        features.median_inter_key_latency = median(ikl);
+        features.std_inter_key_latency    = std(ikl);
+        features.min_inter_key_latency    = Math.min(...ikl);
+        features.max_inter_key_latency    = Math.max(...ikl);
+        features.skewness_inter_key       = skewness(ikl);
+        features.kurtosis_inter_key       = kurtosis(ikl);
+        features.cv_inter_key_latency     = features.mean_inter_key_latency > 0 ? features.std_inter_key_latency / features.mean_inter_key_latency : 0;
+        features.flight_time_mean         = features.mean_inter_key_latency;
+        features.flight_time_std          = features.std_inter_key_latency;
+        features.typing_rhythm_variance   = features.std_inter_key_latency ** 2;
+
+        // WPM
+        const totalTime = timings[timings.length-1] - timings[0];
+        const wc = textBuffer.trim().split(/\s+/).filter(w=>w).length;
+        features.typing_speed_wpm = totalTime > 0 ? (wc / totalTime) * 60 : 0;
+
+        // Pauses / bursts
+        const pauses = ikl.filter(l=>l>2.0);
+        const bursts  = ikl.filter(l=>l<0.5);
+        features.pause_count       = pauses.length;
+        features.mean_pause_duration = mean(pauses);
+        features.std_pause_duration  = std(pauses);
+        features.typing_burst_count  = bursts.length;
+
+        // Burstiness
+        const mu = features.mean_inter_key_latency, sg = features.std_inter_key_latency;
+        features.typing_burstiness = (mu + sg) > 0 ? (sg - mu) / (sg + mu) : 0;
+
+        // Entropy
+        const bins = 10;
+        const min = features.min_inter_key_latency, max = features.max_inter_key_latency;
+        if (max > min) {
+            const hist = new Array(bins).fill(0);
+            ikl.forEach(v => { const b = Math.min(Math.floor((v-min)/(max-min)*bins), bins-1); hist[b]++; });
+            const total = ikl.length;
+            features.typing_entropy = hist.reduce((e, c) => { const p = c/total; return p > 0 ? e - p*Math.log2(p) : e; }, 0);
+        }
+
+        // Correction rates
+        features.backspace_ratio  = keystrokeCount > 0 ? backspaceCount / keystrokeCount : 0;
+        features.correction_ratio = keystrokeCount > 0 ? (backspaceCount + deleteCount) / keystrokeCount : 0;
+        features.hesitation_score = ((pauses.length / Math.max(ikl.length,1)) + features.backspace_ratio) / 2;
+    }
+
+    // Hold durations (keydown→keyup pairs)
+    const downEvents = keystrokes.filter(k=>k.type==='keydown');
+    const upEvents   = keystrokes.filter(k=>k.type==='keyup');
+    const holds = downEvents.slice(0, upEvents.length).map((d,i) => Math.max(0, upEvents[i].timestamp - d.timestamp));
+    if (holds.length) {
+        features.mean_key_hold_duration   = mean(holds);
+        features.median_key_hold_duration = median(holds);
+        features.std_key_hold_duration    = std(holds);
+        features.dwell_time_mean = features.mean_key_hold_duration;
+        features.dwell_time_std  = features.std_key_hold_duration;
+    }
+
+    // Text / linguistic
+    const text = textBuffer;
+    if (text.trim()) {
+        const lower = text.toLowerCase();
+        const words = lower.split(/\s+/).filter(w=>w);
+        const sents = text.split(/[.!?]+/).filter(s=>s.trim());
+        features.word_count      = words.length;
+        features.char_count      = text.length;
+        features.sentence_count  = sents.length;
+        features.avg_word_length = mean(words.map(w=>w.length));
+        features.avg_sentence_length = sents.length ? mean(sents.map(s=>s.trim().split(/\s+/).length)) : 0;
+        features.positive_emotion_words  = words.filter(w=>POSITIVE_WORDS.has(w)).length;
+        features.negative_emotion_words  = words.filter(w=>NEGATIVE_WORDS.has(w)).length;
+        features.anxiety_words           = words.filter(w=>ANXIETY_WORDS.has(w)).length;
+        features.certainty_words         = words.filter(w=>CERTAINTY_WORDS.has(w)).length;
+        features.tentative_words         = words.filter(w=>TENTATIVE_WORDS.has(w)).length;
+        features.apology_count           = words.filter(w=>APOLOGY_WORDS.has(w)).length;
+        features.hedging_count           = HEDGING_PHRASES.filter(p=>lower.includes(p)).length;
+        features.politeness_markers      = words.filter(w=>POLITENESS_WORDS.has(w)).length;
+        const fp = words.filter(w=>FIRST_PERSON.has(w)).length;
+        const sp = words.filter(w=>SECOND_PERSON.has(w)).length;
+        features.first_person_pronouns   = fp;
+        features.second_person_pronouns  = sp;
+        features.self_focus_ratio        = (fp+sp) > 0 ? fp/(fp+sp) : 0;
+        const punct = '.,!?;:\'"';
+        const pc = text.split('').filter(c=>punct.includes(c)).length;
+        features.punctuation_count  = pc;
+        features.punctuation_ratio  = text.length > 0 ? pc/text.length : 0;
+        const caps = text.split('').filter(c=>c>='A'&&c<='Z').length;
+        features.capitalization_count = caps;
+        features.capitalization_ratio = text.length > 0 ? caps/text.length : 0;
+        features.exclamation_count    = (text.match(/!/g)||[]).length;
+        features.question_mark_count  = (text.match(/\?/g)||[]).length;
+        features.ellipsis_count       = (text.match(/\.\.\./g)||[]).length;
+        const uniq = new Set(lower.split('')).size;
+        features.unique_keys_count = uniq;
+        features.key_diversity     = text.length > 0 ? uniq/text.length : 0;
+    }
+
+    // Touch features
+    if (touchEvents.length) {
+        const pressures  = touchEvents.map(e=>e.pressure).filter(p=>p>0);
+        const durations  = touchEvents.filter(e=>e.type==='touchend').map(e=>e.duration).filter(d=>d>0);
+        const areas      = touchEvents.map(e=>e.area).filter(a=>a>0);
+        const moves      = touchEvents.filter(e=>e.type==='touchmove');
+        const velocities = moves.slice(1).map((e,i) => {
+            const prev = moves[i];
+            const dt   = e.timestamp - prev.timestamp;
+            return dt > 0 ? Math.sqrt((e.x-prev.x)**2+(e.y-prev.y)**2)/dt : 0;
+        }).filter(v=>v>0);
+        features.mean_touch_pressure = mean(pressures); features.std_touch_pressure = std(pressures);
+        features.mean_touch_duration = mean(durations); features.std_touch_duration = std(durations);
+        features.mean_touch_area     = mean(areas);     features.std_touch_area     = std(areas);
+        features.mean_touch_velocity = mean(velocities);features.std_touch_velocity = std(velocities);
+        features.tap_count   = touchEvents.filter(e=>e.type==='touchstart').length;
+        features.swipe_count = moves.length;
+    }
+
+    typingFeatureRows.push(features);
+
+    // Show saving indicator briefly
+    const si = document.getElementById('savingIndicator');
+    si.classList.add('show');
+    setTimeout(() => si.classList.remove('show'), 400);
+}
+
+// ============================================================
+// COLLECT ALL FORM DATA
+// ============================================================
+function collectFormData() {
+    const r = {};
+
+    // Demographics
+    r.participant_id   = participantId;
+    r.age              = document.getElementById('age').value;
+    r.gender           = document.getElementById('gender').value;
+    r.psych_history    = textInputs['psych_history']    || document.getElementById('psych_history').value;
+    r.physical_history = textInputs['physical_history'] || document.getElementById('physical_history').value;
+    r.email            = document.getElementById('email').value;
+
+    // AI Usage
+    r.ai_purpose_academic    = document.getElementById('ai_academic').checked ? 1 : 0;
+    r.ai_purpose_decision    = document.getElementById('ai_decision').checked ? 1 : 0;
+    r.ai_purpose_social      = document.getElementById('ai_social').checked ? 1 : 0;
+    r.ai_purpose_therapeutic = document.getElementById('ai_therapeutic').checked ? 1 : 0;
+    r.ai_purpose_other       = document.getElementById('ai_other').checked ? 1 : 0;
+    r.ai_purpose_other_text  = textInputs['ai_purpose_other_text'] || document.getElementById('ai_purpose_other_text').value;
+    r.ai_tools               = textInputs['ai_tools']     || document.getElementById('ai_tools').value;
+    r.ai_hours_day           = textInputs['ai_hours_day'] || document.getElementById('ai_hours_day').value;
+    r.ai_hours_week          = textInputs['ai_hours_week']|| document.getElementById('ai_hours_week').value;
+    r.ai_years               = textInputs['ai_years']     || document.getElementById('ai_years').value;
+
+    // ARSQ (9 scenarios)
+    for (let i = 1; i <= 9; i++) {
+        r[`s${i}_concern`]             = getRadio(`s${i}_concern`);
+        r[`s${i}_explanation`]         = textInputs[`s${i}_explanation`]         || document.getElementById(`s${i}_explanation`)?.value || '';
+        r[`s${i}_expect`]              = getRadio(`s${i}_expect`);
+        r[`s${i}_expect_explanation`]  = textInputs[`s${i}_expect_explanation`]  || document.getElementById(`s${i}_expect_explanation`)?.value || '';
+    }
+
+    // COMPIN-10
+    for (let i = 1; i <= 10; i++) r[`compin_${i}`] = getRadio(`compin_${i}`);
+
+    // NEO-FFI (60 items)
+    for (let i = 1; i <= 60; i++) r[`neo_${i}`] = getRadio(`neo_${i}`);
+
+    // Social Scenarios (checkboxes + unique explanation IDs)
+    for (let i = 1; i <= 6; i++) {
+        const checked = [...document.querySelectorAll(`input[name="support_${i}"]:checked`)].map(cb=>cb.value);
+        r[`social_scenario_${i}`]    = checked.join(', ');
+        r[`social_${i}_explanation`] = textInputs[`social_${i}_explanation`] || document.getElementById(`social_${i}_explanation`)?.value || '';
+    }
+
+    // Pragmatics
+    for (let i = 1; i <= 4; i++) {
+        r[`pragmatics_${i}_response`]    = getRadio(`pragmatics_${i}_response`);
+        r[`pragmatics_${i}_explanation`] = textInputs[`pragmatics_${i}_explanation`] || document.getElementById(`pragmatics_${i}_explanation`)?.value || '';
+    }
+
+    return r;
+}
+
+function getRadio(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : '';
+}
+
+// ============================================================
+// BUILD AND SAVE ALL DATA IN MEMORY
+// ============================================================
+function buildAndSaveAllData() {
+    // Final snapshot
+    captureTypingSnapshot();
+
+    // Build survey row
+    const responses = collectFormData();
+    const completionMins = ((Date.now() - sessionStart) / 60000).toFixed(2);
+
+    surveyResponse = {
+        timestamp:               new Date().toISOString(),
+        session_id:              sessionId,
+        user_id:                 participantId,
+        completion_time_minutes: completionMins,
+        participant_id:          responses.participant_id,
+        age:                     responses.age,
+        gender:                  responses.gender,
+        psych_history:           responses.psych_history,
+        physical_history:        responses.physical_history,
+        email:                   responses.email,
+        ai_purpose_academic:     responses.ai_purpose_academic,
+        ai_purpose_decision:     responses.ai_purpose_decision,
+        ai_purpose_social:       responses.ai_purpose_social,
+        ai_purpose_therapeutic:  responses.ai_purpose_therapeutic,
+        ai_purpose_other:        responses.ai_purpose_other,
+        ai_purpose_other_text:   responses.ai_purpose_other_text,
+        ai_tools:                responses.ai_tools,
+        ai_hours_day:            responses.ai_hours_day,
+        ai_hours_week:           responses.ai_hours_week,
+        ai_years:                responses.ai_years,
+    };
+
+    // ARSQ
+    for (let i=1;i<=9;i++) {
+        surveyResponse[`s${i}_concern`]            = responses[`s${i}_concern`];
+        surveyResponse[`s${i}_explanation`]        = responses[`s${i}_explanation`];
+        surveyResponse[`s${i}_expect`]             = responses[`s${i}_expect`];
+        surveyResponse[`s${i}_expect_explanation`] = responses[`s${i}_expect_explanation`];
+    }
+    // COMPIN
+    for (let i=1;i<=10;i++) surveyResponse[`compin_${i}`] = responses[`compin_${i}`];
+    // NEO
+    for (let i=1;i<=60;i++) surveyResponse[`neo_${i}`] = responses[`neo_${i}`];
+    // Social
+    for (let i=1;i<=6;i++) {
+        surveyResponse[`social_scenario_${i}`]   = responses[`social_scenario_${i}`];
+        surveyResponse[`social_${i}_explanation`] = responses[`social_${i}_explanation`];
+    }
+    // Pragmatics
+    for (let i=1;i<=4;i++) {
+        surveyResponse[`pragmatics_${i}_response`]    = responses[`pragmatics_${i}_response`];
+        surveyResponse[`pragmatics_${i}_explanation`] = responses[`pragmatics_${i}_explanation`];
+    }
+}
+
+// ============================================================
+// CSV DOWNLOAD - saves directly to device
+// ============================================================
+function objectsToCSV(rows) {
+    if (!rows.length) return '';
+    const headers = Object.keys(rows[0]);
+    const escape  = v => {
+        const s = String(v === null || v === undefined ? '' : v);
+        return s.includes(',') || s.includes('"') || s.includes('\n')
+            ? '"' + s.replace(/"/g,'""') + '"' : s;
+    };
+    const lines = [headers.join(',')];
+    rows.forEach(row => lines.push(headers.map(h => escape(row[h])).join(',')));
+    return lines.join('\n');
+}
+
+function downloadCSV(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadSurveyCSV() {
+    if (!surveyResponse || !surveyResponse.participant_id) {
+        showToast('No survey data yet. Please complete the survey first.');
+        return;
+    }
+    const csv = objectsToCSV([surveyResponse]);
+    downloadCSV(csv, `survey_responses_${participantId}.csv`);
+    showToast('✓ Survey CSV downloading!');
+}
+
+function downloadTypingCSV() {
+    if (!typingFeatureRows.length) {
+        showToast('No typing data recorded yet.');
+        return;
+    }
+    const csv = objectsToCSV(typingFeatureRows);
+    downloadCSV(csv, `typing_features_${participantId}.csv`);
+    showToast('✓ Typing features CSV downloading!');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// Warn before leaving
+window.addEventListener('beforeunload', e => {
+    if (isRecording) { e.preventDefault(); e.returnValue = 'Data is being recorded. Are you sure you want to leave?'; }
+});
+</script>
+</body>
+</html>
